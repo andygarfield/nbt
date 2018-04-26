@@ -83,23 +83,17 @@ func DecodeCompound(r io.Reader) (map[string]interface{}, error) {
 
 			switch readByte(r) {
 			case 0x1:
-				val := readByte(r)
-				compound[key] = val
+				compound[key] = readByte(r)
 			case 0x2:
-				val := readInt16(r)
-				compound[key] = val
+				compound[key] = readInt16(r)
 			case 0x3:
-				val := readInt32(r)
-				compound[key] = val
+				compound[key] = readInt32(r)
 			case 0x4:
-				val := readInt64(r)
-				compound[key] = val
+				compound[key] = readInt64(r)
 			case 0x5:
-				val := readFloat32(r)
-				compound[key] = val
+				compound[key] = readFloat32(r)
 			case 0x6:
-				val := readFloat64(r)
-				compound[key] = val
+				compound[key] = readFloat64(r)
 			case 0x7:
 				len := readInt32(r)
 				val := make([]byte, len)
@@ -110,13 +104,9 @@ func DecodeCompound(r io.Reader) (map[string]interface{}, error) {
 				compound[key] = val
 			case 0x8:
 				valLen := int(readInt16(r))
-				val := readString(r, valLen)
-
-				compound[key] = val
+				compound[key] = readString(r, valLen)
 			case 0x9:
-				val := DecodeList(r)
-
-				compound[key] = val
+				compound[key] = DecodeList(r)
 			case 0xA:
 				val, err := DecodeCompound(r)
 				if err != nil {
