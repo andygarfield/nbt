@@ -74,87 +74,71 @@ func DecodeCompound(r io.Reader) (map[string]interface{}, error) {
 
 	endFound := false
 	for !endFound {
-		switch readByte(r) {
-		case 0x0:
+
+		typeByte := readByte(r)
+		if typeByte == 0x0 {
 			endFound = true
-		case 0x1:
-			key := getKey(r)
-			val := readByte(r)
-
-			compound[key] = val
-		case 0x2:
-			key := getKey(r)
-			val := readInt16(r)
-
-			compound[key] = val
-		case 0x3:
-			key := getKey(r)
-			val := readInt32(r)
-
-			compound[key] = val
-		case 0x4:
-			key := getKey(r)
-			val := readInt64(r)
-
-			compound[key] = val
-		case 0x5:
-			key := getKey(r)
-			val := readFloat32(r)
-
-			compound[key] = val
-		case 0x6:
-			key := getKey(r)
-			val := readFloat64(r)
-
-			compound[key] = val
-		case 0x7:
+		} else {
 			key := getKey(r)
 
-			len := readInt32(r)
-			b := make([]byte, len)
-			for i := 0; i < int(len); i++ {
-				b[i] = readByte(r)
+			switch readByte(r) {
+			case 0x1:
+				val := readByte(r)
+				compound[key] = val
+			case 0x2:
+				val := readInt16(r)
+				compound[key] = val
+			case 0x3:
+				val := readInt32(r)
+				compound[key] = val
+			case 0x4:
+				val := readInt64(r)
+				compound[key] = val
+			case 0x5:
+				val := readFloat32(r)
+				compound[key] = val
+			case 0x6:
+				val := readFloat64(r)
+				compound[key] = val
+			case 0x7:
+				len := readInt32(r)
+				val := make([]byte, len)
+				for i := 0; i < int(len); i++ {
+					val[i] = readByte(r)
+				}
+
+				compound[key] = val
+			case 0x8:
+				valLen := int(readInt16(r))
+				val := readString(r, valLen)
+
+				compound[key] = val
+			case 0x9:
+				val := DecodeList(r)
+
+				compound[key] = val
+			case 0xA:
+				val, err := DecodeCompound(r)
+				if err != nil {
+					fmt.Println(err)
+				}
+
+				compound[key] = val
+			case 0xB:
+				len := readInt32(r)
+				val := make([]int32, len)
+				for i := 0; i < int(len); i++ {
+					val[i] = readInt32(r)
+				}
+				compound[key] = val
+			case 0xC:
+				len := readInt32(r)
+				val := make([]int64, len)
+				for i := 0; i < int(len); i++ {
+					val[i] = readInt64(r)
+				}
+				compound[key] = val
 			}
-			compound[key] = b
-		case 0x8:
-			key := getKey(r)
-
-			valLen := int(readInt16(r))
-			val := readString(r, valLen)
-
-			compound[key] = val
-		case 0x9:
-			key := getKey(r)
-			val := DecodeList(r)
-
-			compound[key] = val
-		case 0xA:
-			key := getKey(r)
-
-			val, err := DecodeCompound(r)
-			if err != nil {
-				fmt.Println(err)
-			}
-
-			compound[key] = val
-		case 0xB:
-			key := getKey(r)
-
-			len := readInt32(r)
-			b := make([]int32, len)
-			for i := 0; i < int(len); i++ {
-				b[i] = readInt32(r)
-			}
-			compound[key] = b
-		case 0xC:
-			key := getKey(r)
-
-			len := readInt32(r)
-			b := make([]int64, len)
-			for i := 0; i < int(len); i++ {
-				b[i] = readInt64(r)
-			}
-			compound[key] = b
 		}
 	}
 
