@@ -81,7 +81,7 @@ func DecodeCompound(r io.Reader) (map[string]interface{}, error) {
 		} else {
 			key := getKey(r)
 
-			switch readByte(r) {
+			switch typeByte {
 			case 0x1:
 				compound[key] = readByte(r)
 			case 0x2:
