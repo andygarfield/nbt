@@ -27,11 +27,7 @@ const (
 )
 
 type HelloWorld struct {
-	Sample    string
-	OtherVals struct {
-		Rando     string
-		FavNumber int64
-	}
+	StSeq []string
 }
 
 func main() {
@@ -43,7 +39,7 @@ func main() {
 	//	}
 	v := HelloWorld{}
 	Unmarshal(f, &v)
-	fmt.Println(v)
+	fmt.Printf("%#v\n", v)
 }
 
 // Unmarshal decodes NBT data coming from stream `r` and decodes it into
@@ -80,156 +76,80 @@ func unmarshalCompound(r io.Reader, structVal reflect.Value) error {
 	for {
 		compoundType := readByte(r)
 		fmt.Println("Compound Type:", compoundType)
+
 		if compoundType == endTag {
 			break
 		}
 		matchedField := getMatchingField(r, structVal)
-
-		switch compoundType {
-		case byteTag:
-			matchedField.SetUint(uint64(readByte(r)))
-		case shortTag:
-			newShort := int64(readInt16(r))
-			fmt.Println(newShort)
-			matchedField.SetInt(newShort)
-		case intTag:
-			matchedField.SetInt(int64(readInt32(r)))
-		case longTag:
-			matchedField.SetInt(int64(readInt64(r)))
-		case floatTag:
-			matchedField.SetFloat(float64(readFloat32(r)))
-		case doubleTag:
-			matchedField.SetFloat(readFloat64(r))
-		case byteArrayTag:
-			len := readInt32(r)
-			val := make([]byte, len)
-			for i := 0; i < int(len); i++ {
-				val[i] = readByte(r)
-			}
-
-			matchedField.SetBytes(val)
-		case stringTag:
-			valLen := int(readInt16(r))
-			matchedField.SetString(readString(r, valLen))
-			//			case listTag:
-			//				compound[key] = DecodeList(r)
-		case compoundTag:
-			err := unmarshalCompound(r, matchedField)
-			fmt.Printf("Struct name: %v\n", matchedField)
-			if err != nil {
-				fmt.Println(err)
-			}
-			//
-			//				compound[key] = val
-			//			case intArrayTag:
-			//				len := readInt32(r)
-			//				val := make([]int32, len)
-			//				for i := 0; i < int(len); i++ {
-			//					val[i] = readInt32(r)
-			//				}
-			//				compound[key] = val
-			//			case longArrayTag:
-			//				len := readInt32(r)
-			//				val := make([]int64, len)
-			//				for i := 0; i < int(len); i++ {
-			//					val[i] = readInt64(r)
-			//				}
-			//				compound[key] = val
-		}
+		fmt.Println("Matched field:", matchedField)
+		decodeValue(r, matchedField, compoundType)
 	}
 
 	return nil
 }
 
-//func DecodeList(r io.Reader) []interface{} {
-//	t := readByte(r)
-//
-//	ln := int(readInt32(r))
-//	if ln <= 0 {
-//		return []interface{}{}
-//	}
-//
-//	list := make([]interface{}, ln)
-//
-//	switch t {
-//	case 0x0:
-//		return []interface{}{}
-//	case 0x1:
-//		for i := 0; i < ln; i++ {
-//			list[i] = readByte(r)
-//		}
-//	case 0x2:
-//		for i := 0; i < ln; i++ {
-//			list[i] = readInt16(r)
-//		}
-//	case 0x3:
-//		for i := 0; i < ln; i++ {
-//			list[i] = readInt32(r)
-//		}
-//	case 0x4:
-//		for i := 0; i < ln; i++ {
-//			list[i] = readInt64(r)
-//		}
-//	case 0x5:
-//		for i := 0; i < ln; i++ {
-//			list[i] = readFloat32(r)
-//		}
-//	case 0x6:
-//		for i := 0; i < ln; i++ {
-//			list[i] = readFloat64(r)
-//		}
-//	case 0x7:
-//		for i := 0; i < ln; i++ {
-//			aLn := int(readInt32(r))
-//			nl := make([]byte, aLn)
-//			for j := 0; j < aLn; j++ {
-//				nl[j] = readByte(r)
-//			}
-//			list[i] = nl
-//		}
-//	case 0x8:
-//		for i := 0; i < ln; i++ {
-//			sLn := int(readInt16(r))
-//			list[i] = readString(r, sLn)
-//		}
-//	case 0x9:
-//		for i := 0; i < ln; i++ {
-//			aLn := int(readInt32(r))
-//			nl := make([]interface{}, aLn)
-//			for j := 0; j < aLn; j++ {
-//				nl[j] = DecodeList(r)
-//			}
-//		}
-//	case 0xA:
-//		for i := 0; i < ln; i++ {
-//			c, err := unmarshalCompound(r)
-//			if err != nil {
-//				fmt.Println(err)
-//			}
-//			list[i] = c
-//		}
-//	case 0xB:
-//		for i := 0; i < ln; i++ {
-//			aLn := int(readInt32(r))
-//			nl := make([]int32, aLn)
-//			for j := 0; j < aLn; j++ {
-//				nl[j] = readInt32(r)
-//			}
-//			list[i] = nl
-//		}
-//	case 0xC:
-//		for i := 0; i < ln; i++ {
-//			aLn := int(readInt32(r))
-//			nl := make([]int64, aLn)
-//			for j := 0; j < aLn; j++ {
-//				nl[j] = readInt64(r)
-//			}
-//			list[i] = nl
-//		}
-//	}
-//
-//	return list
-//}
+func decodeValue(r io.Reader, val reflect.Value, tagType byte) {
+	switch tagType {
+	//	case endTag:
+	//		return
+	case byteTag:
+		v := uint64(readByte(r))
+		val.SetUint(v)
+	case shortTag:
+		newShort := int64(readInt16(r))
+		val.SetInt(newShort)
+	case intTag:
+		val.SetInt(int64(readInt32(r)))
+	case longTag:
+		val.SetInt(int64(readInt64(r)))
+	case floatTag:
+		val.SetFloat(float64(readFloat32(r)))
+	case doubleTag:
+		val.SetFloat(readFloat64(r))
+	case byteArrayTag:
+		t := val.Type()
+		ln := int(readInt32(r))
+		s := reflect.MakeSlice(t, ln, ln)
+		for i := 0; i < int(ln); i++ {
+			decodeValue(r, s.Index(i), byteTag)
+		}
+		val.Set(s)
+	case stringTag:
+		valLen := int(readInt16(r))
+		val.SetString(readString(r, valLen))
+	case listTag:
+		listType := readByte(r)
+		t := val.Type()
+		ln := int(readInt32(r))
+		s := reflect.MakeSlice(t, ln, ln)
+		for i := 0; i < int(ln); i++ {
+			decodeValue(r, s.Index(i), listType)
+		}
+		val.Set(s)
+	case compoundTag:
+		err := unmarshalCompound(r, val)
+		fmt.Printf("Struct name: %v\n", val)
+		if err != nil {
+			fmt.Println(err)
+		}
+	case intArrayTag:
+		t := val.Type()
+		ln := int(readInt32(r))
+		s := reflect.MakeSlice(t, ln, ln)
+		for i := 0; i < int(ln); i++ {
+			decodeValue(r, s.Index(i), intTag)
+		}
+		val.Set(s)
+	case longArrayTag:
+		t := val.Type()
+		ln := int(readInt32(r))
+		s := reflect.MakeSlice(t, ln, ln)
+		for i := 0; i < int(ln); i++ {
+			decodeValue(r, s.Index(i), longTag)
+		}
+		val.Set(s)
+	}
+}
 
 func getMatchingField(r io.Reader, structVal reflect.Value) reflect.Value {
 	fieldKey := toPascalCase(getKey(r))
