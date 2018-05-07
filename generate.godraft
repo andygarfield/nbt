@@ -1,0 +1,117 @@
+package main
+
+import (
+	"fmt"
+	"io"
+	"io/ioutil"
+	"reflect"
+)
+
+type tagInfo struct {
+	name     string
+	readData func(tagType byte)
+}
+
+// toss gets rid of a payload of type `tagType`. Call this after any Compound names are read.
+func CreateStruct(r io.Reader) string {
+	structString := getKey(r) + " struct {"
+	fields := []string{}
+	for {
+		tagName := getTagName(readByte(r))
+		structString = append(structString, createFieldString(r, "byte"))
+	}
+}
+
+func getTagInfo(tagType byte) tagInfo {
+	switch tagType {
+	case endTag:
+		break
+	case byteTag:
+		f := func() {
+			io.CopyN(ioutil.Discard, r, 1)
+		}
+		return tagInfo{"byte", f}
+	case shortTag:
+		structString += createFieldString(r, "int16")
+		io.CopyN(ioutil.Discard, r, 2)
+	case intTag:
+		structString += createFieldString(r, "int32")
+		io.CopyN(ioutil.Discard, r, 4)
+	case longTag:
+		structString += createFieldString(r, "int64")
+		io.CopyN(ioutil.Discard, r, 8)
+	case floatTag:
+		structString += createFieldString(r, "float32")
+		io.CopyN(ioutil.Discard, r, 4)
+	case doubleTag:
+		structString += createFieldString(r, "float64")
+		io.CopyN(ioutil.Discard, r, 8)
+	case byteArrayTag:
+		structString += createFieldString(r, "[]byte")
+		ln := int(readInt32(r))
+		for i := 0; i < ln; i++ {
+			toss(r, byteTag)
+		}
+	case stringTag:
+		f := func() {
+			ln := getKey(r)
+			io.CopyN(ioutil.Discard, r, ln)
+		}
+		return tagInfo{"string", f}
+		structString += createFieldString(r, "string")
+		ln := int(readInt16(r))
+		val.SetString(readString(r, ln))
+	case listTag:
+		var ti tagInfo
+		f := func() {
+			bt := readByte(r)
+			ti = getTagInfo(bt)
+
+			ln := int(readInt32(r))
+			for i := 0; i < ln; i++ {
+				ti.readData()
+			}
+		}
+		return tagInfo{
+			name:     "[]" + ti.name,
+			readData: f,
+		}
+		//		structString += createFieldString(r, "")
+		//		listType := readByte(r)
+		//		ln := int(readInt32(r))
+		//		for i := 0; i < ln; i++ {
+		//			toss(r, listType)
+		//		}
+
+	case compoundTag:
+		structString += createFieldString(r, "byte")
+		err := unmarshalCompound(r, val)
+		fmt.Printf("Struct name: %v\n", val)
+		if err != nil {
+			fmt.Println(err)
+		}
+	case intArrayTag:
+		structString += createFieldString(r, "byte")
+		t := val.Type()
+		ln := int(readInt32(r))
+		s := reflect.MakeSlice(t, ln, ln)
+		for i := 0; i < int(ln); i++ {
+			decodeValue(r, s.Index(i), intTag)
+		}
+		val.Set(s)
+	case longArrayTag:
+		structString += createFieldString(r, "byte")
+		t := val.Type()
+		ln := int(readInt32(r))
+		s := reflect.MakeSlice(t, ln, ln)
+		for i := 0; i < int(ln); i++ {
+			decodeValue(r, s.Index(i), longTag)
+		}
+		val.Set(s)
+	}
+}
+
+func createFieldString(r io.Reader, typeStr string) string {
+	n := getKey(r)
+	return fmt.Srintf("%s %s `nbt:\"%s\"`", toPascalCase(n), typeStr, n)
+}

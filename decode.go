@@ -1,10 +1,9 @@
-package main
+package nbt
 
 import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"os"
 	"reflect"
 	"regexp"
 	"strings"
@@ -25,22 +24,6 @@ const (
 	intArrayTag
 	longArrayTag
 )
-
-type HelloWorld struct {
-	StSeq []string
-}
-
-func main() {
-	f, _ := os.Open("./byte.nbt")
-
-	//	gr, err := gzip.NewReader(f)
-	//	if err != nil {
-	//		fmt.Println(err)
-	//	}
-	v := HelloWorld{}
-	Unmarshal(f, &v)
-	fmt.Printf("%#v\n", v)
-}
 
 // Unmarshal decodes NBT data coming from stream `r` and decodes it into
 // destination `v`, which must be a pointer to a `struct` or `interface{}`.
@@ -110,19 +93,19 @@ func decodeValue(r io.Reader, val reflect.Value, tagType byte) {
 		t := val.Type()
 		ln := int(readInt32(r))
 		s := reflect.MakeSlice(t, ln, ln)
-		for i := 0; i < int(ln); i++ {
+		for i := 0; i < ln; i++ {
 			decodeValue(r, s.Index(i), byteTag)
 		}
 		val.Set(s)
 	case stringTag:
-		valLen := int(readInt16(r))
-		val.SetString(readString(r, valLen))
+		ln := int(readInt16(r))
+		val.SetString(readString(r, ln))
 	case listTag:
 		listType := readByte(r)
 		t := val.Type()
 		ln := int(readInt32(r))
 		s := reflect.MakeSlice(t, ln, ln)
-		for i := 0; i < int(ln); i++ {
+		for i := 0; i < ln; i++ {
 			decodeValue(r, s.Index(i), listType)
 		}
 		val.Set(s)
@@ -136,7 +119,7 @@ func decodeValue(r io.Reader, val reflect.Value, tagType byte) {
 		t := val.Type()
 		ln := int(readInt32(r))
 		s := reflect.MakeSlice(t, ln, ln)
-		for i := 0; i < int(ln); i++ {
+		for i := 0; i < ln; i++ {
 			decodeValue(r, s.Index(i), intTag)
 		}
 		val.Set(s)
@@ -144,7 +127,7 @@ func decodeValue(r io.Reader, val reflect.Value, tagType byte) {
 		t := val.Type()
 		ln := int(readInt32(r))
 		s := reflect.MakeSlice(t, ln, ln)
-		for i := 0; i < int(ln); i++ {
+		for i := 0; i < ln; i++ {
 			decodeValue(r, s.Index(i), longTag)
 		}
 		val.Set(s)
