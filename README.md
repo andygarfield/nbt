@@ -1,4 +1,4 @@
 # nbt
-A Minecraft nbt decoder, encoder, and struct generator
+A Minecraft nbt decoder
 
-Everything is a work in progress right now. The plan is to provide a struct is to expose `Marshal()` and `Unmarshal()`, as well as provide a struct generator (modelled after [gojson](https://github.com/ChimeraCoder/gojson)), so that you don't have to spend a ton of time creating types. 
+Decodes an NBT `io.Reader` into a struct. You have to explicitly set the struct currently, but I'm working on a struct generator to make things easier.
