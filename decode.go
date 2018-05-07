@@ -31,22 +31,19 @@ const (
 // compound tag, in Pascal case (i.e. `BeginWithUpperCase`).
 func Unmarshal(r io.Reader, v interface{}) error {
 	if readByte(r) != 0xA {
-		fmt.Println("NBT data does not begin with root compound tag")
+		return fmt.Errorf("NBT data does not begin with root compound tag")
 	}
 
 	structVal := reflect.ValueOf(v)
 
-	compoundName := toPascalCase(getKey(r))
-	structName := getStructName(structVal)
+	getKey(r)
+	getStructName(structVal)
 
-	fmt.Printf("Compound Key: %v\nStructKey: %v\n", compoundName, structName)
-	if structName != compoundName {
-		return fmt.Errorf("Struct name (%v) does not match compound name (%v)", structName, toPascalCase(compoundName))
-	}
+	//	if structName != compoundName {
+	//		return fmt.Errorf("Struct name (%v) does not match compound name (%v)", structName, toPascalCase(compoundName))
+	//	}
 
-	unmarshalCompound(r, structVal)
-
-	return nil
+	return unmarshalCompound(r, structVal)
 }
 
 // unmarshalCompound takes a io.Reader that has initiated a Compound tag and modifies v.
@@ -58,20 +55,20 @@ func Unmarshal(r io.Reader, v interface{}) error {
 func unmarshalCompound(r io.Reader, structVal reflect.Value) error {
 	for {
 		compoundType := readByte(r)
-		fmt.Println("Compound Type:", compoundType)
-
 		if compoundType == endTag {
 			break
 		}
-		matchedField := getMatchingField(r, structVal)
-		fmt.Println("Matched field:", matchedField)
+		matchedField, err := getMatchingField(r, structVal)
+		if err != nil {
+			return err
+		}
 		decodeValue(r, matchedField, compoundType)
 	}
 
 	return nil
 }
 
-func decodeValue(r io.Reader, val reflect.Value, tagType byte) {
+func decodeValue(r io.Reader, val reflect.Value, tagType byte) error {
 	switch tagType {
 	//	case endTag:
 	//		return
@@ -111,9 +108,8 @@ func decodeValue(r io.Reader, val reflect.Value, tagType byte) {
 		val.Set(s)
 	case compoundTag:
 		err := unmarshalCompound(r, val)
-		fmt.Printf("Struct name: %v\n", val)
 		if err != nil {
-			fmt.Println(err)
+			return err
 		}
 	case intArrayTag:
 		t := val.Type()
@@ -132,19 +128,21 @@ func decodeValue(r io.Reader, val reflect.Value, tagType byte) {
 		}
 		val.Set(s)
 	}
+
+	return nil
 }
 
-func getMatchingField(r io.Reader, structVal reflect.Value) reflect.Value {
+func getMatchingField(r io.Reader, structVal reflect.Value) (reflect.Value, error) {
 	fieldKey := toPascalCase(getKey(r))
-	fmt.Println("Field key is:", fieldKey)
 
 	matchedField := reflect.Indirect(structVal).FieldByName(fieldKey)
+	var err error
 
 	if matchedField.Kind() == reflect.Invalid {
-		fmt.Println("Invalid field")
+		err = fmt.Errorf("Invalid field")
 	}
 
-	return matchedField
+	return matchedField, err
 }
 
 func toPascalCase(raw string) string {
