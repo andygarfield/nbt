@@ -76,15 +76,15 @@ func getFieldType(r io.ReadSeeker, tagType byte) string {
 
 	case shortTag:
 		r.Seek(2, io.SeekCurrent)
-		typeStr = "uint16"
+		typeStr = "int16"
 
 	case intTag:
 		r.Seek(4, io.SeekCurrent)
-		typeStr = "uint32"
+		typeStr = "int32"
 
 	case longTag:
 		r.Seek(8, io.SeekCurrent)
-		typeStr = "uint64"
+		typeStr = "int64"
 
 	case floatTag:
 		r.Seek(4, io.SeekCurrent)
