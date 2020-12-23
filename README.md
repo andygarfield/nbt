@@ -1,4 +1,12 @@
 # nbt
-A Minecraft nbt decoder
+A Minecraft nbt decoder for Go
 
-Decodes an NBT `io.Reader` into a struct. You have to explicitly set the struct currently, but I'm working on a struct generator to make things easier.
+## installing
+```
+go install github.com/andygarfield/nbt/...
+```
+
+## creating a struct
+```
+nbtstruct your_nbt_file.nbt
+```
