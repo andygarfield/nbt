@@ -47,18 +47,17 @@ func main() {
 			log.Println(err)
 		}
 	}
-	println("writing")
 	structFile.Write([]byte(fmt.Sprintf("package %s\n", packagePath)))
 	structFile.Write([]byte(CreateStruct(source)))
-	println("done writing")
 
 	structFile.Close()
 	c := exec.Command("go", "fmt", structPath)
 	if err := c.Run(); err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 }
 
+// CreateStruct creates the main body of the struct after decoding the nbt file
 func CreateStruct(r io.ReadSeeker) string {
 	tagType := readByte(r)
 	name := toPascalCase(getKey(r))
@@ -107,7 +106,6 @@ func getFieldType(r io.ReadSeeker, tagType byte) string {
 
 	case listTag:
 		listType := readByte(r)
-		fmt.Printf("list type of %v\n", listType)
 		ln := int(readInt32(r))
 
 		typeStr = getFieldType(r, listType)
