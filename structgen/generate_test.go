@@ -1,4 +1,4 @@
-package nbtstruct
+package structgen
 
 import (
 	"bytes"
