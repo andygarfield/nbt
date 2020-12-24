@@ -1,4 +1,4 @@
-package main
+package nbtstruct
 
 import (
 	"encoding/binary"
@@ -28,27 +28,18 @@ const (
 	longArrayTag
 )
 
-func main() {
-	packagePath := "nbt_types"
+// CreatePackage creates a directory and package from the nbt io.ReadSeeker input
+func CreatePackage(r io.ReadSeeker, packagePath string) {
 	os.Mkdir(packagePath, 0777)
-	structFn := "structs.go"
-	structPath := filepath.Join(packagePath, structFn)
+	structFilename := "structs.go"
+	structPath := filepath.Join(packagePath, structFilename)
 	structFile, err := os.Create(structPath)
 	if err != nil {
 		log.Println(err)
 	}
 
-	var source io.ReadSeeker
-	if len(os.Args) == 1 {
-		source = os.Stdin
-	} else {
-		source, err = os.Open(os.Args[1])
-		if err != nil {
-			log.Println(err)
-		}
-	}
 	structFile.Write([]byte(fmt.Sprintf("package %s\n", packagePath)))
-	structFile.Write([]byte(CreateStruct(source)))
+	structFile.Write([]byte(createStruct(r)))
 
 	structFile.Close()
 	c := exec.Command("go", "fmt", structPath)
@@ -57,8 +48,8 @@ func main() {
 	}
 }
 
-// CreateStruct creates the main body of the struct after decoding the nbt file
-func CreateStruct(r io.ReadSeeker) string {
+// createStruct creates the main body of the struct after decoding the nbt file
+func createStruct(r io.ReadSeeker) string {
 	tagType := readByte(r)
 	name := toPascalCase(getKey(r))
 	typeStr := getFieldType(r, tagType)
