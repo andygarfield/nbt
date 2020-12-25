@@ -29,7 +29,7 @@ const (
 	longArrayTag
 )
 
-// CreatePackage creates a directory and package from the nbt io.ReadSeeker input
+// CreatePackage creates a directory and package from the nbt io.Reader input
 func CreatePackage(r io.Reader, packagePath string) error {
 	b, err := ioutil.ReadAll(r)
 	if err != nil {
@@ -50,9 +50,9 @@ func CreatePackage(r io.Reader, packagePath string) error {
 
 	structFile.Close()
 	c := exec.Command("go", "fmt", structPath)
-	if err := c.Run(); err != nil {
-		return err
-	}
+	err = c.Run()
+
+	return err
 }
 
 // createStruct creates the main body of the struct after decoding the nbt file
