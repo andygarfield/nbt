@@ -1,10 +1,11 @@
 package structgen
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
 	"io"
-	"log"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -29,22 +30,28 @@ const (
 )
 
 // CreatePackage creates a directory and package from the nbt io.ReadSeeker input
-func CreatePackage(r io.ReadSeeker, packagePath string) {
+func CreatePackage(r io.Reader, packagePath string) error {
+	b, err := ioutil.ReadAll(r)
+	if err != nil {
+		return err
+	}
+	reader := bytes.NewReader(b)
+
 	os.Mkdir(packagePath, 0777)
 	structFilename := "structs.go"
 	structPath := filepath.Join(packagePath, structFilename)
 	structFile, err := os.Create(structPath)
 	if err != nil {
-		log.Println(err)
+		return err
 	}
 
 	structFile.Write([]byte(fmt.Sprintf("package %s\n", packagePath)))
-	structFile.Write([]byte(createStruct(r)))
+	structFile.Write([]byte(createStruct(reader)))
 
 	structFile.Close()
 	c := exec.Command("go", "fmt", structPath)
 	if err := c.Run(); err != nil {
-		log.Println(err)
+		return err
 	}
 }
 
